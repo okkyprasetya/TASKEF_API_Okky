@@ -20,11 +20,11 @@ public class HomeController : Controller
         return View();
     }
 
-    [Route("/Hello/ASP")]
-    public IActionResult HelloASP()
-    {
-        return Content("Hello ASP.NET Core MVC!");
-    }
+    //[Route("/Hello/ASP")]
+    //public IActionResult HelloASP()
+    //{
+    //    return Content("Hello ASP.NET Core MVC!");
+    //}
 
     // Home/About
     public IActionResult About()

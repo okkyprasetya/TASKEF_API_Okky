@@ -1,6 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
+using MyRESTServices.BLL.DTOs;
+using MyRESTServices.BLL.Interfaces;
 using MyWebFormApp.BLL.DTOs;
-using MyWebFormApp.BLL.Interfaces;
+using CategoryCreateDTO = MyRESTServices.BLL.DTOs.CategoryCreateDTO;
+using CategoryDTO = MyRESTServices.BLL.DTOs.CategoryDTO;
+using CategoryUpdateDTO = MyRESTServices.BLL.DTOs.CategoryUpdateDTO;
 
 namespace MyRESTServices.Controllers
 {
@@ -8,23 +13,27 @@ namespace MyRESTServices.Controllers
     [ApiController]
     public class CategoriesController : ControllerBase
     {
+        private readonly IValidator<CategoryCreateDTO> _validator;
+        private readonly IValidator<CategoryUpdateDTO> _updateValidator;
         private readonly ICategoryBLL _categoryBLL;
-        public CategoriesController(ICategoryBLL categoryBLL)
+        public CategoriesController(ICategoryBLL categoryBLL, IValidator<CategoryCreateDTO> validator, IValidator<CategoryUpdateDTO> updateValidator)
         {
             _categoryBLL = categoryBLL;
+            _validator = validator;
+            _updateValidator = updateValidator;
         }
 
         [HttpGet]
-        public IEnumerable<CategoryDTO> Get()
+        public async Task<IEnumerable<CategoryDTO>> Get()
         {
-            var results = _categoryBLL.GetAll();
+            var results = await _categoryBLL.GetAll();
             return results;
         }
 
         [HttpGet("{id}")]
-        public IActionResult Get(int id)
+        public async Task<IActionResult> Get(int id)
         {
-            var result = _categoryBLL.GetById(id);
+            var result = await _categoryBLL.GetById(id);
             if (result == null)
             {
                 return NotFound();
@@ -33,8 +42,16 @@ namespace MyRESTServices.Controllers
         }
 
         [HttpPost]
-        public IActionResult Post(CategoryCreateDTO categoryCreateDTO)
+        public async Task<IActionResult> Post(CategoryCreateDTO categoryCreateDTO)
         {
+            var validationResult = await _validator.ValidateAsync(categoryCreateDTO);
+
+            if (!validationResult.IsValid)
+            {
+                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+                return BadRequest(errors);
+            }
+
             if (categoryCreateDTO == null)
             {
                 return BadRequest();
@@ -42,7 +59,7 @@ namespace MyRESTServices.Controllers
 
             try
             {
-                _categoryBLL.Insert(categoryCreateDTO);
+                await _categoryBLL.Insert(categoryCreateDTO);
                 return Ok("Insert data success");
             }
             catch (Exception ex)
@@ -52,16 +69,19 @@ namespace MyRESTServices.Controllers
         }
 
         [HttpPut("{id}")]
-        public IActionResult Put(int id, CategoryUpdateDTO categoryUpdateDTO)
+        public async Task<IActionResult> Put(CategoryUpdateDTO categoryUpdateDTO)
         {
-            if (_categoryBLL.GetById(id) == null)
+            var validationResult = await _updateValidator.ValidateAsync(categoryUpdateDTO);
+
+            if (!validationResult.IsValid)
             {
-                return NotFound();
+                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+                return BadRequest(errors);
             }
 
             try
             {
-                _categoryBLL.Update(categoryUpdateDTO);
+                await _categoryBLL.Update(categoryUpdateDTO);
                 return Ok("Update data success");
             }
             catch (Exception ex)
@@ -71,16 +91,11 @@ namespace MyRESTServices.Controllers
         }
 
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            if (_categoryBLL.GetById(id) == null)
-            {
-                return NotFound();
-            }
-
             try
             {
-                _categoryBLL.Delete(id);
+                await _categoryBLL.Delete(id);
                 return Ok("Delete data success");
             }
             catch (Exception ex)

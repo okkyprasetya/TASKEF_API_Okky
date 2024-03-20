@@ -11,7 +11,6 @@ namespace MyWebFormApp.DAL.Interfaces
 
         int GetCountArticles();
         int InsertWithIdentity(Article article);
-
         void InsertArticleWithCategory(Article article);
     }
 }
